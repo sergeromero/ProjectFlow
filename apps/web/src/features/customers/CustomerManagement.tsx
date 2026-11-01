@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
+import Link from "next/link";
 import { createCustomer, getCustomers } from "./customer-api";
 import type { Customer } from "./customer-api";
 
@@ -185,7 +186,9 @@ export default function CustomerManagement() {
                                 {customers.map((customer) => (
                                     <tr key={customer.id} className="hover:bg-gray-50">
                                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                            {customer.name}
+                                            <Link href={`/customers/${customer.id}`} className="text-blue-700 hover:text-blue-900 hover:underline">
+                                                {customer.name}
+                                            </Link>
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                                             {customer.email}

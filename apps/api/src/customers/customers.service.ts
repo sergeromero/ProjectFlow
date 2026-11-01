@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { QueryFailedError, Repository } from "typeorm";
 import { Customer } from "@/entities/customer.entity";
@@ -38,5 +38,15 @@ export class CustomersService {
 
             throw error;
         }
+    }
+
+    async findOne(id: number): Promise<Customer> {
+        const customer = await this.customerRepository.findOneBy({ id });
+
+        if (!customer) {
+            throw new NotFoundException(`Customer with ID ${id} was not found.`)
+        }
+
+        return customer;
     }
 }

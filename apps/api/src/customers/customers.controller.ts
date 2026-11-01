@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post } from "@nestjs/common";
 import { Customer } from "@/entities/customer.entity";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
 import { CustomersService } from "./customers.service";
@@ -10,6 +10,11 @@ export class CustomersController {
     @Get()
     async findAll(): Promise<Customer[]> {
         return this.customerService.findAll();
+    }
+
+    @Get(":id")
+    async findOne(@Param("id", ParseIntPipe) id: number): Promise<Customer> {
+        return this.customerService.findOne(id);
     }
 
     @Post()

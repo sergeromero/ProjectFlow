@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -10,12 +10,13 @@ import { CustomersService } from './customers.service';
 describe('CustomersService', () => {
   let service: CustomersService;
   let repository: jest.Mocked<
-    Pick<Repository<Customer>, 'find' | 'create' | 'save'>
+    Pick<Repository<Customer>, 'find' | 'findOneBy' | 'create' | 'save'>
   >;
 
   beforeEach(async () => {
     repository = {
       find: jest.fn(),
+      findOneBy: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
     };
@@ -125,6 +126,31 @@ describe('CustomersService', () => {
       repository.save.mockRejectedValue(databaseError);
 
       await expect(service.create(dto)).rejects.toBe(databaseError);
+    });
+  });
+
+  describe("findOne", () => {
+    it("should return a customer when it exists", async () => {
+      const customer = {
+        id: 1,
+        name: "Test Customer",
+        email: "test@email.com"
+      } as Customer;
+
+      repository.findOneBy.mockResolvedValue(customer);
+
+      const result = await service.findOne(1);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(result).toBe(customer);
+    });
+    
+    it("should throw NotFoundException when the customer does not exist", async () => {
+      repository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 999});
     });
   });
 });

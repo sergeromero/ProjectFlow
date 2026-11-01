@@ -61,3 +61,13 @@ export async function createCustomer(request: CreateCustomerRequest): Promise<Cu
 
     return response.json() as Promise<Customer>;
 }
+
+export async function getCustomerById(id: number): Promise<Customer> {
+    const response = await fetch(`${API_BASE_URL}/customers/${id}`, { cache: "no-store" });
+
+    if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
+    }
+
+    return response.json() as Promise<Customer>;
+}
