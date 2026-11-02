@@ -1,10 +1,11 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 
 import { Customer } from '@/entities/customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CustomersService } from './customers.service';
 
 describe('CustomersService', () => {
@@ -152,5 +153,108 @@ describe('CustomersService', () => {
 
       expect(repository.findOneBy).toHaveBeenCalledWith({ id: 999});
     });
+  });
+
+  describe("update", () => {
+    let customer: Customer;
+
+    beforeEach(() => {
+      customer = {
+        id: 1,
+        name: "Original Customer",
+        email: "original@email.com",
+        isActive: true
+      } as Customer;
+
+      repository.findOneBy.mockResolvedValue(customer);
+      repository.save.mockImplementation(async (entity) => entity as Customer);
+    });
+
+    it("should update the customer name", async () => {
+      const dto: UpdateCustomerDto = {
+        name: "Updated Customer"
+      };
+
+      const result = await service.update(1, dto);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(customer.name).toBe("Updated Customer");
+      expect(customer.email).toBe("original@email.com");
+      expect(repository.save).toHaveBeenCalledWith(customer);
+      expect(result).toBe(customer);
+    });
+
+    it("should update the customer email", async () => {
+      const dto: UpdateCustomerDto = {
+        email: "updated@newdomain.com"
+      };
+
+      const result = await service.update(1, dto);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(customer.email).toBe("updated@newdomain.com");
+      expect(customer.name).toBe("Original Customer");
+      expect(repository.save).toHaveBeenCalledWith(customer);
+      expect(result).toBe(customer);
+    });
+
+    it("should update both customer properties", async () => {
+      const dto: UpdateCustomerDto = {
+        name: "Second updated",
+        email: "second_updated@olddomain.com"
+      };
+
+      const result = await service.update(1, dto);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(customer.name).toBe("Second updated");
+      expect(customer.email).toBe("second_updated@olddomain.com");
+      expect(repository.save).toHaveBeenCalledWith(customer);
+      expect(result).toBe(customer);
+    });
+
+    it("should throw BadRequestException when the customer does not exist", async () => {
+      await expect(service.update(1, {})).rejects.toThrow(BadRequestException);
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it("should throw NotFoundException when the customer does not exist", async () => {
+      const anyId: number = 999;
+      repository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.update(anyId, { name: "New Name" })).rejects.toThrow(NotFoundException);
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it("should throw ConflicException when the updated email already exists", async () => {
+      const dto: UpdateCustomerDto = {
+        email: "existing@email.com"
+      };
+
+      const queryError = new QueryFailedError("UPDATE customers",
+        [],
+        Object.assign(new Error("Duplicate key"), {
+          code: "23505",
+        }),
+      );
+
+      repository.save.mockRejectedValue(queryError);
+
+      await expect(service.update(1, dto)).rejects.toThrow(ConflictException);
+    });
+
+    it("should propagate unexpected database errors", async () => {
+      const dto: UpdateCustomerDto = {
+        name: "Updated Customer"
+      };
+
+      const databaseError = new Error("Database connection failed.");
+
+      repository.save.mockRejectedValue(databaseError);
+
+      await expect(service.update(1, dto)).rejects.toBe(databaseError);
+    });    
   });
 });

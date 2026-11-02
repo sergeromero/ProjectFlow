@@ -4,13 +4,16 @@ import { Customer } from '@/entities/customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 describe('CustomersController', () => {
   let controller: CustomersController;
 
   const mockCustomersService = {
     findAll: jest.fn(),
+    findOne: jest.fn(),
     create: jest.fn(),
+    update: jest.fn()
   };
 
   beforeEach(async () => {
@@ -68,4 +71,29 @@ describe('CustomersController', () => {
       expect(result).toBe(customer);
     });
   });
+
+  describe('update', () => {
+    it('should pass the customer ID and DTO to the service', async () => {
+      const id = 1;
+
+      const dto: UpdateCustomerDto = {
+        name: 'Updated Customer',
+      };
+
+      const customer = {
+        id,
+        name: dto.name,
+        email: 'original@example.com',
+        isActive: true,
+      } as Customer;
+
+      mockCustomersService.update.mockResolvedValue(customer);
+
+      const result = await controller.update(id, dto);
+
+      expect(mockCustomersService.update).toHaveBeenCalledWith(id, dto);
+      expect(mockCustomersService.update).toHaveBeenCalledTimes(1);
+      expect(result).toBe(customer);
+    });
+  });  
 });

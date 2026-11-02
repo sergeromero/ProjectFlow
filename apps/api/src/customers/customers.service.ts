@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { QueryFailedError, Repository } from "typeorm";
 import { Customer } from "@/entities/customer.entity";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
+import { UpdateCustomerDto } from "./dto/update-customer.dto";
 
 @Injectable()
 export class CustomersService {
@@ -48,5 +49,36 @@ export class CustomersService {
         }
 
         return customer;
+    }
+
+    async update(id: number, dto: UpdateCustomerDto): Promise<Customer> {
+        const customer = await this.findOne(id);
+
+        if (dto.name === undefined && dto.email === undefined) {
+            throw new BadRequestException("At least one customer property must be provided.");
+        }
+
+        if (dto.name !== undefined) {
+            customer.name = dto.name;
+        }
+
+        if (dto.email !== undefined) {
+            customer.email = dto.email;
+        }
+
+        try {
+            return await this.customerRepository.save(customer);
+        } catch (error: unknown) {
+            if (error instanceof QueryFailedError 
+                && "driverError" in error 
+                && typeof error.driverError === "object"
+                && error.driverError !== null
+                && "code" in error.driverError
+                && error.driverError.code === "23505") {
+                    throw new ConflictException("A customer with this email already exists.")
+            }
+
+            throw error;
+        }
     }
 }

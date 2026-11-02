@@ -14,6 +14,11 @@ export interface CreateCustomerRequest {
     email: string;
 }
 
+export interface UpdateCustomerRequest {
+    name?: string;
+    email?: string;
+}
+
 async function getErrorMessage(response: Response): Promise<string> {
     try {
         const body: unknown = await response.json();
@@ -64,6 +69,22 @@ export async function createCustomer(request: CreateCustomerRequest): Promise<Cu
 
 export async function getCustomerById(id: number): Promise<Customer> {
     const response = await fetch(`${API_BASE_URL}/customers/${id}`, { cache: "no-store" });
+
+    if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
+    }
+
+    return response.json() as Promise<Customer>;
+}
+
+export async function updateCustomer(id: number, request: UpdateCustomerRequest): Promise<Customer> {
+    const response = await fetch(`${API_BASE_URL}/customers/${id}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(request)
+    });
 
     if (!response.ok) {
         throw new Error(await getErrorMessage(response));

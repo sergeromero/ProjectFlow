@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCustomerById } from "@/features/customers/customer-api";
+import Link from "next/link";
 
 interface CustomerDetailsPageProps {
     params: Promise<{ id: string; }>;
@@ -72,11 +73,15 @@ export default async function CustomerDetailsPage ({ params }: CustomerDetailsPa
                 </dl>
             </section>
 
-            <div className="mt-6">
-                <a href="/customers"
-                    className="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        Back to Customers
-                </a>
+            <div className="mt-6 flex items-center gap-3">
+                <Link href={`/customers/${customer.id}/edit`}
+                        className="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">
+                    Edit Customer
+                </Link>
+                <Link href="/customers"
+                        className="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Back to Customers
+                </Link>
             </div>
         </main>
     );
