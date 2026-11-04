@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { SubmitEvent } from "react";
 import Link from "next/link";
-import { createCustomer, getCustomers } from "./customer-api";
+import { createCustomer, getCustomers, deactivateCustomer } from "./customer-api";
 import type { Customer } from "./customer-api";
 
 export default function CustomerManagement() {
@@ -14,6 +14,13 @@ export default function CustomerManagement() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deactivatingCustomerId, setDeactivatingCustomerId] = useState<number | null>(null);
+
+    const [showInactive, setShowInactive] = useState(false);
+
+    const visibleCustomers = showInactive
+        ? customers
+        : customers.filter(c => c.isActive);
 
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -63,6 +70,38 @@ export default function CustomerManagement() {
             setError(err instanceof Error ? err.message : "Unable to create the customer.");
         } finally {
             setIsSubmitting(false);
+        }
+    }
+
+    async function handleDeactivate(customer: Customer): Promise<void> {
+        const confirmed = window.confirm(`Are you sure you want to deactivate "${customer.name}"?\n\n` +
+            "The customer information and historical records will be preserved."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setError(null);
+        setSuccess(null);
+        setDeactivatingCustomerId(customer.id);
+
+        try {
+            const updatedCustomer = await deactivateCustomer(customer.id);
+
+            setCustomers(currentCustomers => 
+                currentCustomers.map(existingCustomer => 
+                    existingCustomer.id === updatedCustomer.id
+                    ? updatedCustomer
+                    : existingCustomer
+                )
+            );
+
+            setSuccess(`Customer "${updatedCustomer.name}" was deactivated successfully.`);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Unable to deactivate the customer.");
+        } finally {
+            setDeactivatingCustomerId(null);
         }
     }
 
@@ -144,12 +183,42 @@ export default function CustomerManagement() {
                         Customers
                     </h2>
 
-                    <button type="button"
-                            onClick={() => loadCustomers()}
-                            disabled={isLoading}
-                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
-                        Refresh
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <label className="inline-flex items-center gap-3 cursor-pointer">
+                            <span className="text-sm font-medium text-gray-700">
+                                Show inactive customers
+                            </span>
+                            <span className="relative inline-flex items-center">
+                                <input type="checkbox"
+                                        checked={showInactive}
+                                        onChange={(event) => setShowInactive(event.target.checked)}
+                                        disabled={isLoading}
+                                        className="peer sr-only" />
+
+                                <span className="
+                                        h-6 w-11 rounded-full bg-gray-300
+                                        transition-colors duration-200
+                                        peer-checked:bg-blue-600
+                                        peer-focus-visible:ring-2
+                                        peer-focus-visible:ring-blue-500
+                                        peer-focus-visible:ring-offset-2
+                                        peer-disabled:opacity-50"></span>
+                                
+                                <span className="
+                                            absolute left-0.5 top-0.5
+                                            h-5 w-5 rounded-full bg-white shadow-sm
+                                            transition-transform duration-200
+                                            peer-checked:translate-x-5"></span>
+                            </span>
+                        </label>
+
+                        <button type="button"
+                                onClick={() => loadCustomers()}
+                                disabled={isLoading}
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                            Refresh
+                        </button>                        
+                    </div>
                 </div>
 
                 {isLoading ? (
@@ -165,7 +234,16 @@ export default function CustomerManagement() {
                         <p className="mt-1 text-sm text-gray-600">
                             Create your first customer using the form above.
                         </p>
-                    </div>                        
+                    </div>    
+                ) : visibleCustomers.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-300 px-6 py-10 text-center">
+                        <p className="font-medium text-gray-900">
+                            No active customers
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600">
+                            All existing customers are inactive.
+                        </p>
+                    </div>
                 ) : (
                     <div className="overflow-x-auto rounded-xl border border-grey-200 bg-white shadow-sm">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -180,10 +258,13 @@ export default function CustomerManagement() {
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                                         Status
                                     </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {customers.map((customer) => (
+                                {visibleCustomers.map((customer) => (
                                     <tr key={customer.id} className="hover:bg-gray-50">
                                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                                             <Link href={`/customers/${customer.id}`} className="text-blue-700 hover:text-blue-900 hover:underline">
@@ -194,13 +275,23 @@ export default function CustomerManagement() {
                                             {customer.email}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                            <span className={
-                                                customer.isActive
-                                                ? "rounded-full bg-green-100 px-3 py-1 font-medium text-green-800"
-                                                : "rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700"
-                                            }>
-                                                {customer.isActive ? "Active" : "Inactive"}
-                                            </span>
+                                            <span className={ customer.isActive 
+                                                                ? "rounded-full bg-green-100 px-3 py-1 font-medium text-green-800" 
+                                                                : "rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700" }>
+                                                    {customer.isActive ? "Active" : "Inactive"} 
+                                            </span>                                            
+                                        </td>
+                                        <td>
+                                            {customer.isActive && (
+                                                <button type="button"
+                                                        onClick={() => void handleDeactivate(customer)}
+                                                        disabled={deactivatingCustomerId !== null}
+                                                        className="rounded-lg border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                                            {deactivatingCustomerId === customer.id
+                                                                ? "Deactivating ..."
+                                                                : "Deactivate"}
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

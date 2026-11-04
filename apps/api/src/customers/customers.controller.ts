@@ -28,4 +28,9 @@ export class CustomersController {
     async update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateCustomerDto): Promise<Customer> {
         return this.customerService.update(id, dto);
     }
+
+    @Patch(":id/deactivate")
+    async deactivate(@Param("id", ParseIntPipe) id: number): Promise<Customer> {
+        return this.customerService.deactivate(id);
+    }
 }

@@ -13,7 +13,8 @@ describe('CustomersController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
-    update: jest.fn()
+    update: jest.fn(),
+    deactivate: jest.fn()
   };
 
   beforeEach(async () => {
@@ -96,4 +97,25 @@ describe('CustomersController', () => {
       expect(result).toBe(customer);
     });
   });  
+
+  describe("deactivate", () => {
+    it("should delegate customer deactivation to the service", async () => {
+      const anyId: number = 999;
+
+      const customer = {
+        id: anyId,
+        name: "Some customer",
+        email: "somecustomer@email.com",
+        isActive: true
+      } as Customer;
+
+      mockCustomersService.deactivate.mockResolvedValue(customer);
+
+      const result = await controller.deactivate(anyId);
+
+      expect(mockCustomersService.deactivate).toHaveBeenCalledWith(anyId);
+      expect(mockCustomersService.deactivate).toHaveBeenCalledTimes(1);
+      expect(result).toBe(customer);
+    })
+  });
 });

@@ -257,4 +257,48 @@ describe('CustomersService', () => {
       await expect(service.update(1, dto)).rejects.toBe(databaseError);
     });    
   });
+
+  describe("deactivate", () => {
+    let customer: Customer;
+
+    beforeEach(() => {
+      customer = {
+        id: 444,
+        name: "Some Customer",
+        email: "somecustomer@email.com",
+        isActive: true
+      } as Customer;
+
+      repository.findOneBy.mockResolvedValue(customer);
+      repository.save.mockImplementation(async (entity) => entity as Customer);
+    });
+
+    it("should deactivate the customer", async () => {
+      const result = await service.deactivate(444);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 444 });
+      expect(customer.isActive).toBe(false);
+      expect(repository.save).toHaveBeenCalledWith(customer);
+    });
+
+    it("should not save an already deactivated customer", async () => {
+      customer.isActive = false;
+
+      expect(customer.isActive).toBe(false);
+      const result = await service.deactivate(444);
+
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 444 });
+      expect(customer.isActive).toBe(false);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it("should throw NotFound exception if customer is not found", async () => {
+      const anyId: number = 888;
+      repository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.deactivate(anyId)).rejects.toThrow(NotFoundException);
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -81,4 +81,16 @@ export class CustomersService {
             throw error;
         }
     }
+
+    async deactivate(id: number): Promise<Customer> {
+        const customer = await this.findOne(id);
+
+        if (!customer.isActive) {
+            return customer;
+        }
+
+        customer.isActive = false;
+
+        return this.customerRepository.save(customer);
+    }
 }

@@ -92,3 +92,15 @@ export async function updateCustomer(id: number, request: UpdateCustomerRequest)
 
     return response.json() as Promise<Customer>;
 }
+
+export async function deactivateCustomer(id: number): Promise<Customer> {
+    const response = await fetch(`${API_BASE_URL}/customers/${id}/deactivate`, {
+        method: "PATCH"
+    });
+
+    if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
+    }
+
+    return response.json() as Promise<Customer>;
+}
