@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 import { DataSource } from "typeorm";
 import { Customer } from "../entities/customer.entity";
+import { Provider } from "../entities/provider.entity";
 
 config({
     path: resolve(__dirname, "../../../../.env"),
@@ -15,8 +16,8 @@ export default new DataSource({
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
 
-    entities: [Customer],
+    entities: [Customer, Provider],
     migrations: [resolve(__dirname, "migrations/*{.ts,.js}")],
 
-    synchronize: false,
+    synchronize: false
 });

@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
 import { CustomersModule } from './customers/customers.module';
+import { ProvidersModule } from './providers/providers.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { CustomersModule } from './customers/customers.module';
       envFilePath: '../../.env',
     }),
     DatabaseModule,
-    CustomersModule
+    CustomersModule,
+    ProvidersModule
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
